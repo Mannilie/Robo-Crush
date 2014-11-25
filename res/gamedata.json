@@ -1,0 +1,31 @@
+{
+	"level":
+	{
+		"name":"level1",
+		"background":"res/background.png",
+		"background_grid":"res/background_grid.png",
+		"gems_spritesheet":"res/gems.png",
+		"gems_desc":"res/gems.plist",
+		"maxRows":8,
+		"maxCols":8,
+        "swappingTime":0,
+        "fallingTime":0,
+        "explosionSpeed":0.045,
+        "shiftDelay":60,
+        "startingScore":100,
+        
+        "scoreAnnouncers":[
+            "",
+            "Double!",
+            "Multi!",
+            "Ultra!",
+            "Fantastic!",
+            "Unbelievable!"],
+	},
+    
+    "UI":
+    {
+        "DefaultFont":'Arial',
+        "LabelSpeed":0.9,
+    }
+}
