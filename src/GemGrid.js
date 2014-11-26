@@ -13,73 +13,70 @@ var ClusterSide = {
 
 var GemGrid = cc.Layer.extend({
     //Screen Dimensions
-    _screenSize:        null, //0
-    _gridOriginX:       null,
-    _gridOriginY:       null,
-    
+    _screenSize: null, //0
+    _gridOriginX: null,
+    _gridOriginY: null,
+
     //Grid
-    _gemGrid:           null, //[][]
-    _width:             null, 
-    _height:            null,
+    _gemGrid: null, //[][]
+    _width: null,
+    _height: null,
     //Gem States Counter
-    _numMoving:         null, //0
-    _numExploding:      null, //0
+    _numMoving: null, //0
+    _numExploding: null, //0
     //Gem grave yard
-    _gemsPool:          null, //[]
+    _gemsPool: null, //[]
     //Game Data and Grid State
-    _gameData:          null,
-    _gridState:         null, 
+    _gameData: null,
+    _gridState: null,
     //Gem cluster
-    _gemCluster:        null, //[]
+    _gemCluster: null, //[]
     //Keyboard
-    _keyboardEnabled:   null, //true
-    //TEMP LABELS
-    GameStateLabel:     null,
-    _ScoreSystem:       null, 
+    _keyboardEnabled: null, //true
 
-    _playerScore:       null, //0
-    _scoreMultiplier:   null, //1
-    _anouncerCounter:   null, //0
+    _nextGemLabel: null,
+    _ScoreSystem: null,
 
-    _shiftTimer:        null, //0
-    _shiftSpeed:        null, //1
+    _playerScore: null, //0
+    _scoreMultiplier: null, //1
+    _anouncerCounter: null, //0
 
-    _initialTouchPos:   null, //[]
-    _currentTouchPos:   null, //[]
-    _isTouchDown:       null, //false
+    _shiftTimer: null, //0
+    _shiftSpeed: null, //1
 
-    _gemTypes:          null, //[]
-    
-    //Next Gem Panel
-    _nextGemCluster:    null, //[]
+    _initialTouchPos: null, //[]
+    _currentTouchPos: null, //[]
+    _isTouchDown: null, //false
+
+    _gemTypes: null, //[]
+
+    _nextGemCluster: null, //[]
     _nextGemClusterPos: null, //[]
+    _previousGemCluster: null, //[]
 
-    _previousGemCluster: null,//[]
+    _keys: null, //[]
+    _sender: null,
+    _endGame: null,
 
-    _sender:            null,
-    _endGame:           null,
-
-    _keys:              null, //[]
-    
     //Initialiser
     ctor: function(gameData) {
         this._super();
         this.init();
-        
+
         //Obtains screen dimensions
-        this._screenSize    = cc.Director.getInstance().getWinSize();
-        
+        this._screenSize = cc.Director.getInstance().getWinSize();
+
         //Obtains Screen Dimensions
         this._gridOriginX = this._screenSize.width * 0.345;
         this._gridOriginY = this._screenSize.height * 0.09;
-        
+
         //Sets up grid physical dimensions
-        this._width         = 480;
-        this._height        = 480;
+        this._width = 480;
+        this._height = 480;
         //Obtains game data
-        this._gameData      = gameData;
-        
-        this._keys          = [];
+        this._gameData = gameData;
+
+        this._keys = [];
         //Touch and Keyboard Events
         this.setTouchMode(cc.TOUCH_ALL_AT_ONCE);
         this.setTouchEnabled(true);
@@ -97,24 +94,23 @@ var GemGrid = cc.Layer.extend({
         //Sets up Observers - Notification Center
         cc.NotificationCenter.getInstance().addObserver(this, this.selectGem, MSG_SELECT_GEM);
         cc.NotificationCenter.getInstance().addObserver(this, this.onMoveDone, MSG_MOVE_DONE);
-        cc.NotificationCenter.getInstance().addObserver(this, this.onSwapDone, MSG_SWAP_DONE);
         cc.NotificationCenter.getInstance().addObserver(this, this.removeExplodedGem, MSG_REMOVE_GEM);
         ////////////////////////////////////////
-    
+
         //Touch events
-        this._initialTouchPos       = [];
-        this._currentTouchPos       = [];
-        this._isTouchDown           = false;
+        this._initialTouchPos = [];
+        this._currentTouchPos = [];
+        this._isTouchDown = false;
 
         //Initialises Gem grid, Clusters & Grave yard (this._gemsPool)
-        this._gemCluster            = [];
-        this._previousGemCluster    = [];
-        
-        this._nextGemCluster        = [];
-        this._nextGemClusterPos     = [];
-        
-        this._gemsPool              = [];
-        this._gemGrid               = [];
+        this._gemCluster = [];
+        this._previousGemCluster = [];
+
+        this._nextGemCluster = [];
+        this._nextGemClusterPos = [];
+
+        this._gemsPool = [];
+        this._gemGrid = [];
         for (var x = 0; x < this._gameData.level.maxRows; ++x) {
             this._gemGrid[x] = [];
             for (var y = 0; y < this._gameData.level.maxCols + 3; ++y) {
@@ -122,64 +118,37 @@ var GemGrid = cc.Layer.extend({
             }
         }
         //////////////////////////////////////////////
-        
-         
-        this._shiftSpeed = 1;
-        this._shiftTimer = 0;
-        
-        this._numMoving = 0;
-        this._numExploding = 0;
-        
-        //UI ELEMENTS
-        this._previousGemCluster    = this._gemCluster;
-    
-        this._nextGemClusterPos[0]  = this._screenSize.width * 0.14;
-        this._nextGemClusterPos[1]  = this._screenSize.height * 0.6;
-        
-        this.GameStateLabel         = cc.LabelTTF.create('Next Gems:', 'Arial', 32, cc.TEXT_ALLIGNMENT_LEFT);
-        this.GameStateLabel.setAnchorPoint(0.5, 0.5);
-        this.GameStateLabel.setColor(new cc.Color3B(255, 0, 0));
-        this.GameStateLabel.setPosition(this._nextGemClusterPos[0] + 30, this._nextGemClusterPos[1] + 200);
-        this.GameStateLabel.setZOrder(5);
-        this.addChild(this.GameStateLabel);
 
-        this._ScoreSystem           = new ScoreSystem(gameData);
-        this._ScoreSystem.setPosition(this._screenSize.width * 0.15, this._screenSize.height * 0.5);
-        
-        this.addChild(this._ScoreSystem, 1);        
-        //Sets Game State to Pending
-        this._gridState             = GridState.Pending;
-    },
-    
-    //Reset
-    reset: function() {
-        this._endGame(); //Changes game screen over to 'Game Over'
-        this._ScoreSystem.resetScore();
-        
-        //Removes all the gems
-        this.removeAllGemsFromGrid();
-         
+
         this._shiftSpeed = 1;
         this._shiftTimer = 0;
-        
-        //Resets the gems states
+
         this._numMoving = 0;
         this._numExploding = 0;
-        
-        this._previousGemCluster[0] = {};
-        this._previousGemCluster[0].row = 0;
-        this._previousGemCluster[0].col = 0;
-        this._previousGemCluster[1] = {};
-        this._previousGemCluster[1].row = 0;
-        this._previousGemCluster[1].col = 0;
-        this._previousGemCluster[2] = {};
-        this._previousGemCluster[2].row = 0;
-        this._previousGemCluster[2].col = 0;
-    
+
+        //UI ELEMENTS
+        this._previousGemCluster = this._gemCluster;
+
+        this._nextGemClusterPos[0] = this._screenSize.width * 0.14;
+        this._nextGemClusterPos[1] = this._screenSize.height * 0.6;
+
+        this._nextGemLabel = cc.LabelTTF.create('Next Gems:', 'Arial', 32, cc.TEXT_ALLIGNMENT_LEFT);
+        this._nextGemLabel.setAnchorPoint(0.5, 0.5);
+        this._nextGemLabel.setColor(new cc.Color3B(255, 0, 0));
+        this._nextGemLabel.setPosition(this._nextGemClusterPos[0] + 30, this._nextGemClusterPos[1] + 200);
+        this._nextGemLabel.setZOrder(5);
+        this.addChild(this._nextGemLabel);
+
+        this._ScoreSystem = new ScoreSystem(gameData);
+        this._ScoreSystem.setPosition(this._screenSize.width * 0.15, this._screenSize.height * 0.5);
+
+        this.addChild(this._ScoreSystem, 1);
         //Sets Game State to Pending
-        this._gridState             = GridState.Pending;
+        this._gridState = GridState.Pending;
+
+        this.scheduleUpdate();
     },
-    
+
     //Update
     update: function(dt) {
 
@@ -221,7 +190,7 @@ var GemGrid = cc.Layer.extend({
                     this._previousGemCluster[i].row = this._gemCluster[i].row;
                     this._previousGemCluster[i].col = this._gemCluster[i].col;
                 }
-                
+
                 this._keyboardEnabled = true;
                 //Generates a new Cluster 
                 this.generateCluster(Math.floor(this._gameData.level.maxRows / 2), this._gameData.level.maxCols - 1);
@@ -253,11 +222,14 @@ var GemGrid = cc.Layer.extend({
 
     //Generation of cluster
     generateCluster: function(startRow, startCol) {
-        
+
         if (this.checkClusterOutOfGrid(this._previousGemCluster)) {
-            this.reset();
+            //Plays 'game over' sound effect when the game is over
+            cc.AudioEngine.getInstance().playEffect(s_game_over);
+            this._endGame();
+            //this.reset();
         }
-        
+
         //Gets Grid Origin
         var GridOriginX = this._screenSize.width * 0.345;
         var GridOriginY = this._screenSize.height * 0.09;
@@ -320,7 +292,7 @@ var GemGrid = cc.Layer.extend({
                 //this._numMoving++;
                 //new_gem.moveGem(this._gameData.level.fallingTime, new cc.Point(gemX, gemY));
                 new_gem.setPosition(new cc.p(gemX, gemY));
-                
+
                 //Adds Gem to grid for displaying
                 if (this._gemGrid[row][col] !== null) {
                     this._gemsPool.push(this._gemGrid[row][col]);
@@ -399,7 +371,7 @@ var GemGrid = cc.Layer.extend({
             this._nextGemCluster[i] = new_gem;
         }
     },
-    
+
     /* 
      * Cluster Functions
      */
@@ -412,7 +384,7 @@ var GemGrid = cc.Layer.extend({
             this._gemGrid[row][col] = null;
         }
     },
-    checkClusterOutOfGrid:function(prevCluster) { //PERFECT
+    checkClusterOutOfGrid: function(prevCluster) { //PERFECT
         for (var i = 0; i < prevCluster.length; ++i) {
             if (prevCluster[i].col >= this._gameData.level.maxCols) {
                 return true;
@@ -431,10 +403,10 @@ var GemGrid = cc.Layer.extend({
         }
         return false;
     },
-    
+
     //GEMS
     removeAllGemsFromGrid: function() {
-    for (var row = 0; row < this._gameData.level.maxRows; ++row) {
+        for (var row = 0; row < this._gameData.level.maxRows; ++row) {
             for (var col = 0; col < this._gameData.level.maxCols + 3; ++col) {
                 if (this._gemGrid[row][col] != null) {
                     this._gemsPool.push(this._gemGrid[row][col]);
@@ -444,13 +416,12 @@ var GemGrid = cc.Layer.extend({
             }
         }
     },
-    
+
     ////////////////////////////////////
-    
+
     /*
      * Keyboard and Touch Input Handlers
      */
-        
     onEnter: function() {
         cc.registerTargetedDelegate(1, true, this);
         this._super();
@@ -479,26 +450,34 @@ var GemGrid = cc.Layer.extend({
         }
     },
     onKeyDown: function(key) {
-        //if (this._keyboardEnabled == false)
-        //    return;
-
-        if(this._keys.contains(key))
+        if (this._keyboardEnabled == false)
             return;
-        
+       
+        if (this._keys.contains(key))
+            return;
+
         switch (key) {
             case 37:
+                //Plays audio when moved left
+                cc.AudioEngine.getInstance().playEffect(s_move_gems);
                 this.shiftGemsLeft();
                 this._keys.push(37);
                 break;
             case 38:
+                //Plays audio when shuffled up
+                cc.AudioEngine.getInstance().playEffect(s_move_gems);
                 this.shuffleGemsUp();
                 this._keys.push(38);
                 break;
             case 39:
+                //Plays audio when moved right
+                cc.AudioEngine.getInstance().playEffect(s_move_gems);
                 this.shiftGemsRight();
                 this._keys.push(39);
                 break;
             case 40:
+                //Plays audio when moved down
+                cc.AudioEngine.getInstance().playEffect(s_move_gems_down);
                 this._shiftSpeed = 15;
                 this._keys.push(40);
                 break;
@@ -538,7 +517,7 @@ var GemGrid = cc.Layer.extend({
         return false;
     },
 
-     //Shift Gems
+    //Shift Gems
     shiftAllGems: function() {
 
         //Obtains Screen Dimensions
@@ -610,7 +589,6 @@ var GemGrid = cc.Layer.extend({
 
         return anyShifts;
     },
-    
     shiftGemsLeft: function() {
         var anyShifts = false;
 
@@ -659,7 +637,9 @@ var GemGrid = cc.Layer.extend({
 
         return true;
     },
+    ////////////////
 
+    //Gem handlers
     shuffleGemsUp: function() {
         //Check to see if any Gems were shifted after this function
         var anyShifts = false;
@@ -708,9 +688,9 @@ var GemGrid = cc.Layer.extend({
         this._gemCluster.push(this._gemCluster.shift());
         this._gemCluster.push(this._gemCluster.shift());
 
-        
+
         this.moveAllGems();
-        
+
         //PLACEMENT TEMP
         this._gemCluster[0].placement = 'top';
         this._gemCluster[1].placement = 'middle';
@@ -718,7 +698,6 @@ var GemGrid = cc.Layer.extend({
 
         return anyShifts;
     },
-
     moveAllGems: function() {
         for (var i = 0; i < this._gemCluster.length; ++i) {
             var row = this._gemCluster[i].row;
@@ -727,7 +706,7 @@ var GemGrid = cc.Layer.extend({
                 var gemX = this._gridOriginX + row * (this._width / this._gameData.level.maxRows);
                 var gemY = this._gridOriginY + col * (this._height / this._gameData.level.maxCols);
                 //this._numMoving++;
-                
+
                 this._gemGrid[row][col].setPosition(new cc.p(gemX, gemY));
                 //this._gemGrid[row][col].moveGem(this._gameData.level.fallingTime, new cc.p(gemX, gemY));
             }
@@ -742,7 +721,6 @@ var GemGrid = cc.Layer.extend({
             }
         }
     },
-
     hasCollisions: function(side) {
         if (side == ClusterSide.Up) {
             var row = this._gemCluster[this._gemCluster.length - 1].row;
@@ -784,7 +762,6 @@ var GemGrid = cc.Layer.extend({
         }
         return false;
     },
-    
     checkForMatches: function() {
         var matched = false;
         var matches = [];
@@ -911,7 +888,6 @@ var GemGrid = cc.Layer.extend({
 
         return matched;
     },
-
     checkClusterForMatches: function() {
         //Checks if the 3 Gems being compared each iteration are VALID
         if (this._gemCluster[0] !== null &&
@@ -923,9 +899,6 @@ var GemGrid = cc.Layer.extend({
         }
         return false;
     },
-    //////////////////
-
-    
     removeByRowCol: function(arr, row, col) {
         var i = arr.length;
         while (i--) {
@@ -936,7 +909,6 @@ var GemGrid = cc.Layer.extend({
         }
         return arr;
     },
-    
     onMoveDone: function() {
         this._numMoving--;
     },

@@ -1,20 +1,27 @@
 /*
  * Main Menu Screen
  */
-var MainMenuScreen = cc.Layer.extend({
-    _buttons: [],
+var MainMenuScreen = cc.Scene.extend({
+    _buttons: null,
     _background: null,
 
     _gameTitle: null,
     //Transitions and stuff if you want
     _myName:null,
-    ctor: function() {
+    
+    _sender: null,
+    
+    ctor: function(sender) {
         this._super();
         this.init();
 
+        this._sender = sender;
+        
         var screenSize = cc.Director.getInstance().getWinSize();
-
-        //Backgrounds
+        
+        /*
+         * Screen objects
+         */
         this._background = new Texture2D(s_mainmenu_background,
             cc.p(screenSize.width / 2, screenSize.height / 2));
 
@@ -31,6 +38,27 @@ var MainMenuScreen = cc.Layer.extend({
         this.addChild(this._background, 0);
         this.addChild(this._gameTitle, 1);
         this.addChild(this._myName, 2);
+
+        this._buttons = [];
+        
+        /*
+         * Buttons 
+         */
+        var mainMenuButtons = []; 
+        mainMenuButtons.push(new Button("Play", s_btn_green, this._sender, 
+                                        cc.p(screenSize.width * 0.5, screenSize.height * 0.60),
+                                        function() { 
+                                            this._sender.setGameState(GameState.InGame); }
+                                        ));
+        
+        mainMenuButtons.push(new Button("Survey!", s_btn_green, this._sender, 
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.40), 
+                                          function() { 
+                                                window.open("https://docs.google.com/forms/d/17xyI-Svo9ORNWcxMURoohG7r4hBB2-vxV-AvQwhDxK8/viewform?usp=send_form");
+                                            }));
+        //Create new buttons here
+        
+        this.addButtons(mainMenuButtons);        
     },
 
     addButton: function(new_btn) {
@@ -49,8 +77,8 @@ var MainMenuScreen = cc.Layer.extend({
 /*
  * In Game Screen
  */
-var InGameScreen = cc.Layer.extend({
-    _buttons: [],
+var InGameScreen = cc.Scene.extend({
+    _buttons: null,
     _background: null,
     _backgroundGrid: null,
 
@@ -59,9 +87,9 @@ var InGameScreen = cc.Layer.extend({
     _gameData: null,
 
     _game: null,
-
-    _pausedUpdate: false,
-
+    
+    _sender:null,
+    
     loadLevels: function() {
         var data = cc.FileUtils.getInstance().getTextFileData(s_gameData);
         this._gameData = eval("(" + data + ")");
@@ -72,9 +100,15 @@ var InGameScreen = cc.Layer.extend({
         this._super();
         this.loadLevels();
 
+        this._sender = sender;
+        
         var screenSize = cc.Director.getInstance().getWinSize();
 
-        //Backgrounds
+        this._buttons = [];
+        
+        /*
+         * Screen objects
+         */
         this._background = new Texture2D(s_background,
             cc.p(screenSize.width / 2, screenSize.height / 2));
         this._backgroundGrid = new Texture2D(s_background_grid,
@@ -99,46 +133,19 @@ var InGameScreen = cc.Layer.extend({
         this.addChild(this._background);
         this.addChild(this._backgroundGrid);
         this.addChild(this._gemGrid);
+        
+        // Buttons
+        var inGameButtons = [];
+        inGameButtons.push(new Button("Quit", s_btn_green, this._sender,
+                                      cc.p(screenSize.width * 0.15, screenSize.height * 0.3),
+                                      function() {
+                                                    this._sender.setGameState(GameState.MainMenu);
+                                                    //this._sender._inGame.reset(); 
+                                                    }));
+        
+        this.addButtons(inGameButtons);
     },
-
-    pauseUpdate: function(bool) {
-        this._pausedUpdate = bool;
-        if (bool) {
-            this._gemGrid.setTouchEnabled(false);
-            this._gemGrid.setKeyboardEnabled(false);
-        } else {
-            this._gemGrid.setTouchEnabled(true);
-            this._gemGrid.setKeyboardEnabled(true);
-        }
-    },
-
-    disableButtons: function(bool) {
-        if (bool) {
-            for (var i = 0; i < this._buttons.length; ++i) {
-                this._buttons[i].setTouchEnabled(false);
-                this._buttons[i].setKeyboardEnabled(false);
-                this._buttons[i].setMouseEnabled(false); 
-            }
-        } else {
-            for (var i = 0; i < this._buttons.length; ++i) {
-                this._buttons[i].setTouchEnabled(true);
-                this._buttons[i].setKeyboardEnabled(true);
-                this._buttons[i].setMouseEnabled(true); 
-            }
-        }
-    },
-
-    update: function(dt) {
-        if (this._pausedUpdate)
-            return;
-
-        var childNode = this._children;
-        for (var i = 0; i < childNode.length; i++) {
-            var child = childNode[i];
-            child.update(dt);
-        }
-    },
-
+    
     addButton: function(new_btn) {
         this._buttons.push(new_btn);
         this.addChild(new_btn);
@@ -159,12 +166,31 @@ var InGameScreen = cc.Layer.extend({
 /*
  * Paused Screen
  */
-var PausedScreen = cc.Layer.extend({
-    _buttons: [],
-
-    ctor: function() {
+var PausedScreen = cc.Scene.extend({
+    _buttons: null,
+    
+    _sender:null,
+    
+    ctor: function(sender) {
         this.init();
         this._super();
+        
+        this._sender = sender;
+        
+        this._buttons = [];
+        
+        /*
+         * Buttons
+         */
+        var pausedScreenButtons = [];
+        pausedScreenButtons.push(new Button("Back", s_btn_green, this._sender,
+                                      cc.p(screenSize.width * 0.5, screenSize.height * 0.65),
+                                      function() { this._sender.setGameState(GameState.InGame);
+                                                                                         }));
+        
+        //Create new buttons here
+        
+        this.addButtons(pausedScreenButtons);
     },
 
     addButton: function(new_btn) {
@@ -184,11 +210,25 @@ var PausedScreen = cc.Layer.extend({
  * Leaderboard Screen
  */
 var LeaderBoardScreen = cc.Layer.extend({
-    _buttons: [],
+    _buttons: null,
 
     ctor: function() {
         this.init();
         this._super();
+        
+        this._buttons = [];
+        
+        /*
+         * Buttons
+         */
+        var leaderBoardButtons = [];
+        leaderBoardButtons.push(new Button("Back", s_btn_green, this._sender,
+                                          cc.p(screenSize.width * 0.2, screenSize.height * 0.4),
+                                          function() { this._sender.setGameState(GameState.MainMenu);}));
+        
+        //Create new buttons here
+        
+        this.addButtons(leaderBoardButtons);
     },
 
     addButton: function(new_btn) {
@@ -207,16 +247,25 @@ var LeaderBoardScreen = cc.Layer.extend({
 /*
  * Game Over Screen
  */
-var GameOverScreen = cc.Layer.extend({
-    _buttons: [],
+var GameOverScreen = cc.Scene.extend({
+    _buttons: null, 
     _background: null,
-
-    ctor: function() {
+    
+    _sender: null,
+    
+    ctor: function(sender) {
         this.init();
         this._super();
 
+        this._sender = sender;
+        
+        this._buttons = [];
+        
         var screenSize = cc.Director.getInstance().getWinSize();
 
+        /*
+         * Buttons
+         */
         this._background = new Texture2D(s_gameover_background,
             cc.p(screenSize.width * 0.5, screenSize.height * 0.7));
 
@@ -224,6 +273,32 @@ var GameOverScreen = cc.Layer.extend({
             screenSize.height / this._background.getContentSize().height);
 
         this.addChild(this._background);
+                
+        // Buttons
+        var gameOverButtons = [];
+        //Push back new buttons into array  
+        
+        gameOverButtons.push(new Button("Retry", s_btn_green, this._sender, 
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.4), 
+                                          function() { 
+                                                this._sender.setGameState(GameState.InGame);
+                                            }));
+        
+        gameOverButtons.push(new Button("Survey!", s_btn_green, this._sender, 
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.3), 
+                                          function() { 
+                                                window.open("https://docs.google.com/forms/d/17xyI-Svo9ORNWcxMURoohG7r4hBB2-vxV-AvQwhDxK8/viewform?usp=send_form");
+                                            }));
+        
+        gameOverButtons.push(new Button("MainMenu", s_btn_green, this._sender, 
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.2), 
+                                          function() { 
+                                                this._sender.setGameState(GameState.MainMenu);
+                                            }));
+        //Create new buttons here
+        
+        this.addButtons(gameOverButtons);
+        
     },
 
     addButton: function(new_btn) {

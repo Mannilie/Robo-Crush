@@ -30,6 +30,17 @@ var s_btn_green = "res/btn_green.png";
 //Health bar
 var s_health_bar = "res/health_bar.png";
 
+//Sounds
+var s_move_gems = "res/move_gems.ogg";
+var s_move_gems_down = "res/move_gems_down.ogg";
+
+var s_game_over = "res/game_over.ogg";
+
+//Announcers
+var s_multi = "res/announcers/multi.ogg";
+var s_ultra = "res/announcers/ultra.ogg";
+var s_fantastic = "res/announcers/fantastic.ogg";
+
 var g_resources = [
     //image
     s_background,
@@ -65,4 +76,12 @@ var g_resources = [
     //bgm
 
     //effect
+    s_move_gems,
+    s_move_gems_down,
+    s_game_over,
+    
+    //Announcers
+    s_multi,
+    s_ultra,
+    s_fantastic,    
 ];

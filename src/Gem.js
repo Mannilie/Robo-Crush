@@ -2,7 +2,6 @@ var MSG_SELECT_GEM = "msg_select_gem";
 
 var MSG_REMOVE_GEM = "msg_remove_gem";
 var MSG_MOVE_DONE = "msg_move_done";
-var MSG_SWAP_DONE = "msg_swap_done";
 
 var MSG_TOUCH_ENABLED = "msg_touch_enabled";
 var MSG_TOUCH_DISABLED = "msg_touch_disabled";
@@ -23,7 +22,7 @@ var GemState = {
 };
 
 var Gem = cc.Sprite.extend({
-    _screenSize: 0,
+    _screenSize: null,
     _gemType: null,
     //Settings
     _width: null,
@@ -35,25 +34,24 @@ var Gem = cc.Sprite.extend({
     //Gem Effects
     _overlaySprite: null,
     //_touchEnabled: true,
-    _explosionSpeed: 0.5,
+    _explosionSpeed: null,
     _explosionAnimation:null,
     
-    init: function() {
-        this._super();
-
-        this.setGemType(4);
-
-        this._screenSize = cc.Director.getInstance().getWinSize();        
-    },
+    //Initialization
     ctor: function() {
         this._super();
         this.init();
+        
+        this.setGemType(4);
 
         this._width = 64;
         this._height = 64;
 
+        //Sets screen size
         this._screenSize = cc.Director.getInstance().getWinSize();
 
+        this._explosionSpeed = 0.5;
+        
         // initialising the overlay sprite
         this._overlaySprite = cc.Sprite.create();
         this._overlaySprite.setAnchorPoint(0, 0);
@@ -68,16 +66,18 @@ var Gem = cc.Sprite.extend({
         this._gemState = state;
         switch (this._gemState) {
             case GemState.Exploding:
-                //this.stopAllActions();
+                
+                //Sets the overlay sprite
                 this._overlaySprite = cc.Sprite.create();
                 this._overlaySprite.setAnchorPoint(0, 0);
                 this.addChild(this._overlaySprite);
                 var Animation = cc.Animation.create(Gem._explosionFrames, this._explosionSpeed);
                 var Animate = cc.Animate.create(Animation);
-                //this.setVisible(true);
-                //this.runAction(Animate);
+                
+                //Fades this sprite out
                 this.runAction(cc.FadeOut.create(0.2));
-                // creating a sequence
+                
+                //Plays the explosion animation followed by running the 'onExplodeEnd' function
                 this._overlaySprite.runAction(cc.Sequence.create(Animate,
                     cc.FadeOut.create(0.01),
                     cc.CallFunc.create(this.onExplodeEnd.bind(this), this)));
@@ -99,23 +99,20 @@ var Gem = cc.Sprite.extend({
     },
     setGemType: function(gemType) {
         this.gem_type = gemType;
-
+        
+        //Sets the gem's sprite over to the appropriate gem in sprite sheet loaded previously
         switch (gemType) {
             case GemType.Purple:
-                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_01.png")); //purple
-                //this._selectedSprite.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Block_01.png"));
+                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_01.png"));
                 break;
             case GemType.Blue:
-                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_02.png")); //blue
-                //this._selectedSprite.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Block_02.png"));
+                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_02.png"));
                 break;
             case GemType.Orange:
-                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_03.png")); //yellow
-                //this._selectedSprite.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Block_03.png"));
+                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_03.png"));
                 break;
             case GemType.Green:
-                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_04.png")); //green
-                //this._selectedSprite.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Block_04.png"));
+                this.setDisplayFrame(cc.SpriteFrameCache.getInstance().getSpriteFrame("Gem_04.png"));
                 break;
             case GemType.Empty:
                 break;
@@ -170,17 +167,20 @@ var Gem = cc.Sprite.extend({
 
     //Actions
     moveGem: function(duration, endPosition) {
+        //Moves the sprite followed by calling the 'onMoveEnd' function
         var action = cc.Sequence.create(cc.MoveTo.create(duration, endPosition), cc.CallFunc.create(this.onMoveEnd.bind(this), this));
         this.setGemState(GemState.Moving);
         this.runAction(action);
     },
     onMoveEnd: function() {
         this.setGemState(GemState.Stable);
+        //Posts notification to GemGrid
         cc.NotificationCenter.getInstance().postNotification(MSG_MOVE_DONE, this);
     },
     onExplodeEnd: function() {
         this.setGemState(GemState.Empty);
         this.setOpacity(255);
+        //Posts notification to GemGrid
         cc.NotificationCenter.getInstance().postNotification(MSG_REMOVE_GEM, this);
     },
     //////////////////////////////////////////////////////////////////
@@ -188,6 +188,7 @@ var Gem = cc.Sprite.extend({
     //Other
     randomise: function() {
         this.setOpacity(255);
+        //Sets this gem's gemtype to a random gem
         this.setGemType(Math.floor((Math.random() * 4)));
     },
     //////////////////////////

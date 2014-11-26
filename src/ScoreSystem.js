@@ -32,6 +32,16 @@ var ScoreSystem = cc.Layer.extend({
         if (anouncerNo >= this._scoreAnnouncers.length)
             anouncerNo = this._scoreAnnouncers.length - 1;
 
+        if(anouncerNo == 1) {
+            cc.AudioEngine.getInstance().playEffect(s_multi);   
+        }
+        else if(anouncerNo == 2) {
+            cc.AudioEngine.getInstance().playEffect(s_ultra);  
+        }
+        else if(anouncerNo == 3) {
+            cc.AudioEngine.getInstance().playEffect(s_fantastic);  
+        }
+        
         var labelAnnouncer = new AnnouncerLabel();
         labelAnnouncer.setPosition(position);
         labelAnnouncer.setString(this._scoreAnnouncers[anouncerNo]);
