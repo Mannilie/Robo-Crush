@@ -8,11 +8,23 @@ var GameState = {
 
 var AIEMatch3Game = cc.Layer.extend({
     _gameState: null,
-
+    _gameData: null,
+    
+    
+    loadLevels: function() {
+        var data = cc.FileUtils.getInstance().getTextFileData(s_gameData);
+        this._gameData = eval("(" + data + ")");
+    },
+    
     ctor: function() {
         //calls the base constructor of Cocos2D
         this._super();
+        //Loads the game level's data
+        this.loadLevels(); 
 
+        var scoreSystem = ScoreSystem.getInstance();
+        scoreSystem.initialise(this._gameData);
+        
         //Gets screen size
         var screenSize = cc.Director.getInstance().getWinSize();
 
@@ -37,7 +49,7 @@ var AIEMatch3Game = cc.Layer.extend({
                 /**
                  * Sets up In Game Screen
                  **/
-                var ingame = new InGameScreen(this);
+                var ingame = new InGameScreen(this._gameData, this);
                 cc.Director.getInstance().replaceScene(cc.TransitionPageTurn.create(1.0, ingame, true)); //Screen Transition
                 break;
             case GameState.Paused:

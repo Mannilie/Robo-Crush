@@ -51,6 +51,8 @@
             'src/ScoreSystem.js',
             'src/Button.js',
             'src/GameScreens.js',
+            'src/HighScoreManager.js',
+            'src/Worker.js'
         ]
     };
 

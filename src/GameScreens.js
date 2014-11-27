@@ -89,17 +89,12 @@ var InGameScreen = cc.Scene.extend({
     _game: null,
     
     _sender:null,
-    
-    loadLevels: function() {
-        var data = cc.FileUtils.getInstance().getTextFileData(s_gameData);
-        this._gameData = eval("(" + data + ")");
-    },
 
-    ctor: function(sender) {
+    ctor: function(gameData, sender) {
         this.init();
         this._super();
-        this.loadLevels();
-
+        
+        this._gameData = gameData;
         this._sender = sender;
         
         var screenSize = cc.Director.getInstance().getWinSize();
@@ -133,7 +128,7 @@ var InGameScreen = cc.Scene.extend({
         this.addChild(this._background);
         this.addChild(this._backgroundGrid);
         this.addChild(this._gemGrid);
-        
+                
         // Buttons
         var inGameButtons = [];
         inGameButtons.push(new Button("Quit", s_btn_green, this._sender,
@@ -162,7 +157,6 @@ var InGameScreen = cc.Scene.extend({
         this._gemGrid.reset();
     }
 });
-
 /*
  * Paused Screen
  */
@@ -205,37 +199,60 @@ var PausedScreen = cc.Scene.extend({
         }
     },
 });
-
 /*
  * Leaderboard Screen
  */
 var LeaderBoardScreen = cc.Layer.extend({
     _buttons: null,
-
-    ctor: function() {
+    _labels:null,
+    
+    _highScoresManager:null,
+    
+    ctor: function(sender) {
         this.init();
         this._super();
-        
+
         this._buttons = [];
+        this._labels = [];
+
+        this._sender = sender;
+    
+        
+        var screenSize = cc.Director.getInstance().getWinSize();
+        
+        this._highScoresManager = new HighScoreManager();
+        this.addChild(this._highScoresManager, 1);
         
         /*
          * Buttons
          */
         var leaderBoardButtons = [];
         leaderBoardButtons.push(new Button("Back", s_btn_green, this._sender,
-                                          cc.p(screenSize.width * 0.2, screenSize.height * 0.4),
-                                          function() { this._sender.setGameState(GameState.MainMenu);}));
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.2),
+                                          function() { 
+                                                this._sender.setGameState(GameState.MainMenu);
+                                          }));
         
         //Create new buttons here
         
         this.addButtons(leaderBoardButtons);
     },
-
+    
+    addLabel: function(new_labels) {
+        this._labels.push(new_labels);
+        this.addChild(new_labels);
+    },
+    addLabels: function(new_labels) {
+        for (var i = 0; i < new_labels.length; ++i) {
+            this._labels.push(new_labels[i]);
+            this.addChild(new_labels[i]);
+        }
+    },
+    
     addButton: function(new_btn) {
         this._buttons.push(new_btn);
         this.addChild(new_btn);
     },
-
     addButtons: function(new_btns) {
         for (var i = 0; i < new_btns.length; ++i) {
             this._buttons.push(new_btns[i]);
@@ -243,13 +260,16 @@ var LeaderBoardScreen = cc.Layer.extend({
         }
     },
 });
-
 /*
  * Game Over Screen
  */
 var GameOverScreen = cc.Scene.extend({
     _buttons: null, 
+    _labels:null,
+    
     _background: null,
+    
+    _scoreSystem:null,
     
     _sender: null,
     
@@ -257,9 +277,12 @@ var GameOverScreen = cc.Scene.extend({
         this.init();
         this._super();
 
+        this._scoreSystem = ScoreSystem.getInstance();
+        
         this._sender = sender;
         
         this._buttons = [];
+        this._labels = [];
         
         var screenSize = cc.Director.getInstance().getWinSize();
 
@@ -267,31 +290,40 @@ var GameOverScreen = cc.Scene.extend({
          * Buttons
          */
         this._background = new Texture2D(s_gameover_background,
-            cc.p(screenSize.width * 0.5, screenSize.height * 0.7));
+            cc.p(screenSize.width * 0.5, screenSize.height * 0.75));
 
         this._background.setScale(screenSize.width / this._background.getContentSize().width,
             screenSize.height / this._background.getContentSize().height);
 
         this.addChild(this._background);
                 
+        //Labels
+        var gameOverLabel = cc.LabelTTF.create("Score: " + this._scoreSystem.getScore(), 'Arial', 32, cc.TEXT_ALLIGNMENT_LEFT);;
+        gameOverLabel.setAnchorPoint(0.5, 0.5);
+        gameOverLabel.setOpacity(255);
+        gameOverLabel.setPosition(cc.p(screenSize.width * 0.5, screenSize.height * 0.4));
+        gameOverLabel.setColor(new cc.Color3B(255, 0, 0));
+        
+        this.addLabel(gameOverLabel);
+                            
         // Buttons
         var gameOverButtons = [];
         //Push back new buttons into array  
         
+        gameOverButtons.push(new Button("Submit", s_btn_green, this._sender, 
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.25), 
+                                          function() { 
+                                                this._sender.setGameState(GameState.LeaderBoards);
+                                            }));
+        
         gameOverButtons.push(new Button("Retry", s_btn_green, this._sender, 
-                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.4), 
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.15), 
                                           function() { 
                                                 this._sender.setGameState(GameState.InGame);
                                             }));
         
-        gameOverButtons.push(new Button("Survey!", s_btn_green, this._sender, 
-                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.3), 
-                                          function() { 
-                                                window.open("https://docs.google.com/forms/d/17xyI-Svo9ORNWcxMURoohG7r4hBB2-vxV-AvQwhDxK8/viewform?usp=send_form");
-                                            }));
-        
         gameOverButtons.push(new Button("MainMenu", s_btn_green, this._sender, 
-                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.2), 
+                                          cc.p(screenSize.width * 0.5, screenSize.height * 0.05), 
                                           function() { 
                                                 this._sender.setGameState(GameState.MainMenu);
                                             }));
@@ -301,6 +333,17 @@ var GameOverScreen = cc.Scene.extend({
         
     },
 
+    addLabel: function(new_labels) {
+        this._labels.push(new_labels);
+        this.addChild(new_labels);
+    },
+    addLabels: function(new_labels) {
+        for (var i = 0; i < new_labels.length; ++i) {
+            this._labels.push(new_labels[i]);
+            this.addChild(new_labels[i]);
+        }
+    },
+    
     addButton: function(new_btn) {
         this._buttons.push(new_btn);
         this.addChild(new_btn);

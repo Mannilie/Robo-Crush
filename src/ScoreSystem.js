@@ -10,12 +10,14 @@ var ScoreSystem = cc.Layer.extend({
     //Stores the different announcement strings for transitions
     _scoreAnnouncers: [],
     _anouncerLabels: [],
-    ctor: function(gameData) {
+    ctor: function() {
         this.init();
         this._super();
-
-        this._gameData = gameData;
-
+    },
+    
+    initialise:function(gameData) {
+        this._gameData = gameData;    
+        
         this._scoreLabel = cc.LabelTTF.create("Score: " + this._score, this._gameData.UI.defaultFont, 32, cc.TEXT_ALLIGNMENT_LEFT);
         this._scoreLabel.setAnchorPoint(0.5, 0.5);
         this._scoreLabel.setOpacity(255);
@@ -28,6 +30,7 @@ var ScoreSystem = cc.Layer.extend({
 
         this._scoreAnnouncers = this._gameData.level.scoreAnnouncers;
     },
+    
     playAnouncer: function(anouncerNo, position, scaleAmount) {
         if (anouncerNo >= this._scoreAnnouncers.length)
             anouncerNo = this._scoreAnnouncers.length - 1;
@@ -73,12 +76,23 @@ var ScoreSystem = cc.Layer.extend({
     setPosition: function(x, y) {
         this._scoreLabel.setPosition(x, y);
     },
-    
+    getScore:function() {
+        return this._score;  
+    },
     resetScore: function() {
         this._score = 0;
         this._scoreLabel.setString("Score: " + this._score);
     }
 });
+
+//Makes Score System a Singleton
+ScoreSystem.instance = null;
+ScoreSystem.getInstance = function() {
+    if(ScoreSystem.instance === null) {
+        ScoreSystem.instance = new ScoreSystem();   
+    }
+    return ScoreSystem.instance;
+}
 
 var ScoreLabel = cc.Layer.extend({
     _Label: null,

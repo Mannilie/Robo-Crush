@@ -139,16 +139,51 @@ var GemGrid = cc.Layer.extend({
         this._nextGemLabel.setZOrder(5);
         this.addChild(this._nextGemLabel);
 
-        this._ScoreSystem = new ScoreSystem(gameData);
+        this._ScoreSystem = ScoreSystem.getInstance();
         this._ScoreSystem.setPosition(this._screenSize.width * 0.15, this._screenSize.height * 0.5);
+        this._ScoreSystem.resetScore();
 
+        //Tries to delete ScoreSystem if it exists - NEEDS FIXING
+        //this.removeChild(this._ScoreSystem);
         this.addChild(this._ScoreSystem, 1);
         //Sets Game State to Pending
         this._gridState = GridState.Pending;
 
         this.scheduleUpdate();
+        
+        this.setupWorker();
     },
 
+    setupWorker:function() {
+        var size = cc.Director.getInstance().getWinSize();
+        
+        // setting up the web worker
+		this._temperatureText = cc.LabelTTF.create("", "Arial", 18);
+		this._temperatureText.setPosition(size.width * 3.2 / 5, size.height * 9.2 / 10);  
+		this._temperatureText.setColor(cc.c3(0, 0, 255)); 
+		this.addChild(this._temperatureText);
+
+		this._worker = new Worker("src/Worker.js");
+
+		this._worker.addEventListener("message", this.onMessage.bind(this), false)
+
+		this._worker.onerror = function(error) {
+			throw error;
+		};
+
+		this.schedule(this.checkWeatherAPI, 120.0);
+
+		this._worker.postMessage();  
+    },
+    onMessage:function(event)
+	{
+		this._temperatureText.setString(event.data);
+	},
+	checkWeatherAPI:function()
+	{
+		this._worker.postMessage();
+	},
+    
     //Update
     update: function(dt) {
 
@@ -165,15 +200,6 @@ var GemGrid = cc.Layer.extend({
                             this._gridState = GridState.Idle;
                         }, this))); //Checks for Gem matches
                 }
-
-                //if (this.shiftGems() && !matches)
-                //    return;
-                //
-                //if (!this.checkForMoves() && !this._noMoreMoves) {
-                //    //cc.AudioEngine.getInstance().playEffect(s_noMoreMoves);
-                //    this._noMoreMoves = true;
-                //}
-
             } else {
                 this._gridState = GridState.Processing;
             }
@@ -227,7 +253,6 @@ var GemGrid = cc.Layer.extend({
             //Plays 'game over' sound effect when the game is over
             cc.AudioEngine.getInstance().playEffect(s_game_over);
             this._endGame();
-            //this.reset();
         }
 
         //Gets Grid Origin
@@ -288,9 +313,8 @@ var GemGrid = cc.Layer.extend({
                 //Obtains Gem's appropriate grid location based on 'row' and 'col'
                 var gemX = GridOriginX + row * (this._width / this._gameData.level.maxRows);
                 var gemY = GridOriginY + col * (this._height / this._gameData.level.maxCols);
-                //Moves the gem and sets it's state to "Moving"
-                //this._numMoving++;
-                //new_gem.moveGem(this._gameData.level.fallingTime, new cc.Point(gemX, gemY));
+                
+                //Moves the gem
                 new_gem.setPosition(new cc.p(gemX, gemY));
 
                 //Adds Gem to grid for displaying
@@ -361,13 +385,6 @@ var GemGrid = cc.Layer.extend({
             //Sets origin of sprite
             new_gem.setAnchorPoint(0, 0);
 
-            ////Sets Gem's Overlay sprite scale
-            //var xScale = new_gem.getWidth() / Gem._explosionFrames[0].getOriginalSize().width;
-            //var yScale = new_gem.getHeight() / Gem._explosionFrames[0].getOriginalSize().height;
-            //new_gem._overlaySprite.setScaleX(xScale);
-            //new_gem._overlaySprite.setScaleY(yScale);
-
-
             this._nextGemCluster[i] = new_gem;
         }
     },
@@ -428,6 +445,9 @@ var GemGrid = cc.Layer.extend({
     },
     onExit: function() {
         cc.unregisterTouchDelegate(this);
+        
+        this.removeChild(this._ScoreSystem);
+        
         this._super();
     },
     onKeyUp: function(key) {
@@ -546,9 +566,8 @@ var GemGrid = cc.Layer.extend({
                         //Finally Moves Gem over to new Position
                         var gemX = GridOriginX + row * (this._width / this._gameData.level.maxRows);
                         var gemY = GridOriginY + (col - 1) * (this._height / this._gameData.level.maxCols);
-                        //this._numMoving++;
-                        //
-                        //this._gemGrid[row][col - 1].moveGem(this._gameData.level.fallingTime, new cc.p(gemX, gemY));
+                        
+                        //Moves the gem
                         this._gemGrid[row][col - 1].setPosition(new cc.p(gemX, gemY))
                         //Yes there was a Shift
                         anyShifts = true;
@@ -577,8 +596,8 @@ var GemGrid = cc.Layer.extend({
             this._gemGrid[row][col - 1].setCol(col - 1);
 
             this.setRowsAndCols(row, col, row, col - 1);
-            //this._numMoving++;
-            //this._gemGrid[row][col - 1].moveGem(this._gameData.level.fallingTime, this._gemGrid[row][col].getPosition());
+            
+            //Moves the gem
             this._gemGrid[row][col - 1].setPosition(this._gemGrid[row][col].getPosition());
             //Sets OLD position to null
             this._gemGrid[row][col] = null;
@@ -679,15 +698,12 @@ var GemGrid = cc.Layer.extend({
         this._gemGrid[row1][col1 - 1].setCol(col1 - 1);
 
         this.setRowsAndCols(row2, col2, row1, col1 - 1);
-        ////Sets the cluster's row and col
-        //this._gemCluster[this._gemCluster.length - 1].setRow(row1);
-        //this._gemCluster[this._gemCluster.length - 1].setCol(col1 - 1);
+        
         //Sets OLD position to null
         this._gemGrid[row2][col2] = null;
         //Finally Moves Gem over to new Position        
         this._gemCluster.push(this._gemCluster.shift());
         this._gemCluster.push(this._gemCluster.shift());
-
 
         this.moveAllGems();
 
